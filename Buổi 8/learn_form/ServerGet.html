@@ -1,0 +1,55 @@
+<head>
+    <meta charset="utf-8" />
+    <title></title>
+    <style>
+        .gay {
+    margin: 0;
+    min-height: 100vh;
+    background: linear-gradient(90deg,
+      #E70000 0%,
+      #FF8C00 16%,
+      #FFEF00 33%,
+      #00811F 50%,
+      #0044FF 66%,
+      #760089 82%,
+      #AA00FF 100%);
+    font-family: Arial, sans-serif;
+    color: white;}
+    </style>
+    <script>
+        function getUrlVars() {
+            var vars = {};
+            var parts = window.location.href.replace(
+                /[?&]+([^=&]+)=([^&]*)/gi,
+                function (m, key, value) {
+                    vars[key] = value;
+                }
+            );
+            return vars;
+        }
+
+        var ten = unescape(getUrlVars()["txtten"]);
+        var email = unescape(getUrlVars()["txtemail"]);
+    </script>
+</head>
+<body>
+    <h1 class="iduser"></h1>
+    <h1 class="gay">ĐÃ BỊ GAY</h1>
+    <form>
+        <table border="1">
+            <tr>
+                <td>User:</td>
+                <td id="iduser"></td>
+            </tr>
+            <tr>
+                <td>Email:</td>
+                <td id="idemail"></td>
+            </tr>
+        </table>
+    </form>
+
+    <script>
+        document.getElementById("iduser").innerHTML = ten;
+        document.getElementById("idemail").innerHTML = email;
+    </script>
+</body>
