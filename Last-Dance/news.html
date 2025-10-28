@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tin Tức Mới Nhất - VnExpress</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+            padding: 20px;
+        }
+
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .loading {
+            text-align: center;
+            color: white;
+            font-size: 1.5em;
+            padding: 50px;
+        }
+
+        .news-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .news-item {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .news-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+        }
+
+        .news-image {
+            width: 100%;
+            height: 220px;
+            object-fit: cover;
+            background: #f0f0f0;
+        }
+
+        .news-content {
+            padding: 20px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .news-title {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+            line-height: 1.4;
+            text-decoration: none;
+            display: block;
+        }
+
+        .news-title:hover {
+            color: #667eea;
+        }
+
+        .news-description {
+            color: #666;
+            font-size: 0.95em;
+            line-height: 1.6;
+            margin-bottom: 15px;
+            flex: 1;
+        }
+
+        .news-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+            font-size: 0.85em;
+            color: #999;
+        }
+
+        .news-date {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .news-date::before {
+            content: "📅";
+        }
+
+        .news-category {
+            background: #667eea;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+        }
+
+        .refresh-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 15px 25px;
+            border-radius: 50px;
+            font-size: 1.1em;
+            cursor: pointer;
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .refresh-btn:hover {
+            background: #764ba2;
+            transform: scale(1.05);
+            box-shadow: 0 8px 25px rgba(118, 75, 162, 0.5);
+        }
+
+        .refresh-btn:active {
+            transform: scale(0.95);
+        }
+
+        .error-message {
+            background: #ff6b6b;
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        @media (max-width: 768px) {
+            .news-grid {
+                grid-template-columns: 1fr;
+            }
+
+            header h1 {
+                font-size: 2em;
+            }
+
+            .refresh-btn {
+                bottom: 20px;
+                right: 20px;
+                padding: 12px 20px;
+            }
+        }
+
+        .loading-spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid white;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🌟 Tin Tức Mới Nhất 🌟</h1>
+            <p>Cập nhật từ VnExpress RSS Feed</p>
+        </header>
+
+        <div id="loading" class="loading">
+            <div class="loading-spinner"></div>
+            <p>Đang tải tin tức...</p>
+        </div>
+
+        <div id="newsContainer" class="news-grid"></div>
+    </div>
+
+    <button class="refresh-btn" onclick="loadNews()">🔄 Làm mới</button>
+
+    <script>
+        // Proxy server để vượt qua CORS
+        const CORS_PROXY = 'https://api.allorigins.win/raw?url=';
+        const RSS_URL = 'https://vnexpress.net/rss/tin-moi-nhat.rss';
+
+        async function loadNews() {
+            const loadingEl = document.getElementById('loading');
+            const newsContainer = document.getElementById('newsContainer');
+            
+            loadingEl.style.display = 'block';
+            newsContainer.innerHTML = '';
+
+            try {
+                const response = await fetch(CORS_PROXY + encodeURIComponent(RSS_URL));
+                const text = await response.text();
+                
+                // Parse XML
+                const parser = new DOMParser();
+                const xmlDoc = parser.parseFromString(text, 'text/xml');
+                
+                // Kiểm tra lỗi parse
+                if (xmlDoc.querySelector('parsererror')) {
+                    throw new Error('Lỗi parse XML');
+                }
+
+                // Lấy các item từ RSS
+                const items = xmlDoc.querySelectorAll('item');
+                
+                if (items.length === 0) {
+                    newsContainer.innerHTML = '<div class="error-message">Không tìm thấy tin tức nào!</div>';
+                    loadingEl.style.display = 'none';
+                    return;
+                }
+
+                // Hiển thị từng tin tức
+                items.forEach((item, index) => {
+                    const title = item.querySelector('title')?.textContent || 'Không có tiêu đề';
+                    const link = item.querySelector('link')?.textContent || '#';
+                    const description = item.querySelector('description')?.textContent || 'Không có mô tả';
+                    const pubDate = item.querySelector('pubDate')?.textContent || '';
+                    
+                    // Lấy hình ảnh từ description (VnExpress embed image trong CDATA)
+                    let imageUrl = 'https://via.placeholder.com/350x220/667eea/ffffff?text=VnExpress';
+                    const imgMatch = description.match(/<img[^>]+src="([^">]+)"/);
+                    if (imgMatch && imgMatch[1]) {
+                        imageUrl = imgMatch[1];
+                    }
+
+                    // Lấy text description (loại bỏ HTML tags)
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = description;
+                    const cleanDescription = tempDiv.textContent.substring(0, 150) + '...';
+
+                    // Format ngày
+                    const formattedDate = formatDate(pubDate);
+
+                    // Lấy category từ link
+                    const categoryMatch = link.match(/vnexpress\.net\/([^\/]+)/);
+                    const category = categoryMatch ? categoryMatch[1].toUpperCase() : 'TIN TỨC';
+
+                    // Tạo HTML cho tin tức
+                    const newsHTML = `
+                        <div class="news-item">
+                            <img src="${imageUrl}" alt="${title}" class="news-image" 
+                                 onerror="this.src='https://via.placeholder.com/350x220/667eea/ffffff?text=VnExpress'">
+                            <div class="news-content">
+                                <a href="${link}" target="_blank" class="news-title">${title}</a>
+                                <p class="news-description">${cleanDescription}</p>
+                                <div class="news-meta">
+                                    <span class="news-date">${formattedDate}</span>
+                                    <span class="news-category">${category}</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+
+                    newsContainer.innerHTML += newsHTML;
+                });
+
+                loadingEl.style.display = 'none';
+
+            } catch (error) {
+                console.error('Lỗi:', error);
+                newsContainer.innerHTML = `
+                    <div class="error-message">
+                        <h3>❌ Không thể tải tin tức</h3>
+                        <p>Vui lòng kiểm tra kết nối internet hoặc thử lại sau.</p>
+                        <p style="font-size: 0.9em; margin-top: 10px;">Lỗi: ${error.message}</p>
+                    </div>
+                `;
+                loadingEl.style.display = 'none';
+            }
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return 'Chưa rõ';
+            
+            try {
+                const date = new Date(dateString);
+                const now = new Date();
+                const diffMs = now - date;
+                const diffMins = Math.floor(diffMs / 60000);
+                const diffHours = Math.floor(diffMs / 3600000);
+                const diffDays = Math.floor(diffMs / 86400000);
+
+                if (diffMins < 1) return 'Vừa xong';
+                if (diffMins < 60) return `${diffMins} phút trước`;
+                if (diffHours < 24) return `${diffHours} giờ trước`;
+                if (diffDays < 7) return `${diffDays} ngày trước`;
+
+                // Format ngày đầy đủ
+                const day = date.getDate().toString().padStart(2, '0');
+                const month = (date.getMonth() + 1).toString().padStart(2, '0');
+                const year = date.getFullYear();
+                const hours = date.getHours().toString().padStart(2, '0');
+                const minutes = date.getMinutes().toString().padStart(2, '0');
+
+                return `${day}/${month}/${year} ${hours}:${minutes}`;
+            } catch (e) {
+                return dateString;
+            }
+        }
+
+        // Tự động load khi trang được tải
+        window.addEventListener('load', loadNews);
+
+        // Auto refresh mỗi 5 phút
+        setInterval(loadNews, 300000);
+    </script>
+</body>
+</html>
